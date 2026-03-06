@@ -18,7 +18,7 @@ Built with Electron, React, TypeScript & Tailwind CSS.
 ## Install
 
 ```bash
-git clone https://github.com/your-username/hackbench.git
+git clone https://github.com/Ajinkya-hash-25/hackbench.git
 cd hackbench
 npm install
 ```
