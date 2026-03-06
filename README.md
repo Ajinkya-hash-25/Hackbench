@@ -15,7 +15,18 @@ Built with Electron, React, TypeScript & Tailwind CSS.
 | Converters | Color Converter, Timestamp Converter |
 | Utilities | Diff Checker, Cron Parser |
 
-## Install
+## Download
+
+Grab the latest release for your platform:
+
+| Version | Windows | Notes |
+|---------|---------|-------|
+| [v1.0.1 (Latest)](https://github.com/Ajinkya-hash-25/Hackbench/releases/tag/v1.0.1) | [Hackbench.1.0.0.exe](https://github.com/Ajinkya-hash-25/Hackbench/releases/download/v1.0.1/Hackbench.1.0.0.exe) | Latest release |
+| [v1.0.0](https://github.com/Ajinkya-hash-25/Hackbench/releases/tag/v1.0.0) | [Hackbench.1.0.0.exe](https://github.com/Ajinkya-hash-25/Hackbench/releases/download/v1.0.0/Hackbench.1.0.0.exe) | Initial release |
+
+> All releases: [github.com/Ajinkya-hash-25/Hackbench/releases](https://github.com/Ajinkya-hash-25/Hackbench/releases)
+
+## Install from Source
 
 ```bash
 git clone https://github.com/Ajinkya-hash-25/hackbench.git
