@@ -1,5 +1,9 @@
 # Hackbench
 
+![GitHub release](https://img.shields.io/github/v/release/Ajinkya-hash-25/Hackbench)
+![GitHub downloads](https://img.shields.io/github/downloads/Ajinkya-hash-25/Hackbench/total)
+![License](https://img.shields.io/github/license/Ajinkya-hash-25/Hackbench)
+
 Offline-first developer toolkit with 17+ privacy-focused utilities. No data leaves your machine.
 
 Built with Electron, React, TypeScript & Tailwind CSS.
@@ -17,20 +21,21 @@ Built with Electron, React, TypeScript & Tailwind CSS.
 
 ## Download
 
-Grab the latest release for your platform:
+Grab the latest release for your platform from the [releases page](https://github.com/Ajinkya-hash-25/Hackbench/releases/latest):
 
-| Version | Windows | Notes |
-|---------|---------|-------|
-| [v1.0.1 (Latest)](https://github.com/Ajinkya-hash-25/Hackbench/releases/tag/v1.0.1) | [Hackbench.1.0.0.exe](https://github.com/Ajinkya-hash-25/Hackbench/releases/download/v1.0.1/Hackbench.1.0.0.exe) | Latest release |
-| [v1.0.0](https://github.com/Ajinkya-hash-25/Hackbench/releases/tag/v1.0.0) | [Hackbench.1.0.0.exe](https://github.com/Ajinkya-hash-25/Hackbench/releases/download/v1.0.0/Hackbench.1.0.0.exe) | Initial release |
+| Platform | File |
+|----------|------|
+| Windows | `.exe` portable |
+| macOS | `.dmg` / `.zip` |
+| Linux | `.AppImage` / `.deb` |
 
 > All releases: [github.com/Ajinkya-hash-25/Hackbench/releases](https://github.com/Ajinkya-hash-25/Hackbench/releases)
 
 ## Install from Source
 
 ```bash
-git clone https://github.com/Ajinkya-hash-25/hackbench.git
-cd hackbench
+git clone https://github.com/Ajinkya-hash-25/Hackbench.git
+cd Hackbench
 npm install
 ```
 
