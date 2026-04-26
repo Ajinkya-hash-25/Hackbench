@@ -78,6 +78,7 @@ function UrlEncoder() {
   }, [urlInput])
 
   const handleSwap = () => {
+    if (output.startsWith('Error')) return
     setInput(output)
     setOutput(input)
     setMode(mode === 'encode' ? 'decode' : 'encode')

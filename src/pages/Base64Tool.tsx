@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
-import { Binary, Copy, Check, ArrowRightLeft, FileText } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Binary, Copy, Check, ArrowRightLeft, FileText, Search } from 'lucide-react'
 import Button from '../components/common/Button'
 import TextArea from '../components/common/TextArea'
 import FileDropZone from '../components/common/FileDropZone'
+import SearchBar from '../components/common/SearchBar'
+import { useSearch } from '../hooks/useSearch'
+import { highlightSearchTerm, computeLineMatchOffsets } from '../utils/search'
 import { copyToClipboard } from '../utils/clipboard'
 
 type Mode = 'encode' | 'decode'
@@ -16,18 +19,38 @@ function Base64Tool() {
   const [error, setError] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
 
+  const search = useSearch(output)
+  const outputLines = useMemo(() => output.split('\n'), [output])
+  const lineMatchData = useMemo(() => {
+    if (!search.searchTerm || !search.isOpen) return null
+    return computeLineMatchOffsets(outputLines, search.searchTerm, search.caseSensitive)
+  }, [outputLines, search.searchTerm, search.caseSensitive, search.isOpen])
+
+  const renderHighlightedLine = (line: string, lineIdx: number) => {
+    if (!lineMatchData || !search.searchTerm) return line
+    const info = lineMatchData[lineIdx]
+    if (!info || info.count === 0) return line
+    const { elements } = highlightSearchTerm(line, search.searchTerm, search.caseSensitive, info.offset, search.currentIndex)
+    return elements
+  }
+
   const isBase64 = (str: string): boolean => {
-    if (!str || str.length === 0) return false
-    // Check if string matches base64 pattern
-    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/
-    return base64Regex.test(str.replace(/\s/g, '')) && str.length % 4 === 0
+    if (!str || str.length < 24) return false
+    const cleaned = str.replace(/\s/g, '')
+    if (cleaned.length % 4 !== 0) return false
+    // Must match base64 pattern AND contain non-alphanumeric base64 chars or padding
+    // to reduce false positives on plain English text
+    const base64Regex = /^[A-Za-z0-9+/]+=*$/
+    if (!base64Regex.test(cleaned)) return false
+    // Require at least one char that's only valid in base64, not plain text (+, /, or =)
+    return /[+/=]/.test(cleaned)
   }
 
   // Auto-detect mode based on input
   useEffect(() => {
     if (autoDetect && input) {
       const trimmed = input.trim()
-      if (isBase64(trimmed) && trimmed.length > 20) {
+      if (isBase64(trimmed)) {
         setMode('decode')
       }
     }
@@ -147,7 +170,7 @@ function Base64Tool() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-y-auto">
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -222,7 +245,7 @@ function Base64Tool() {
       )}
 
       <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 min-h-0">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-[#a0a0a0]">
               Input {mode === 'encode' ? '(Text)' : '(Base64)'}
@@ -254,16 +277,58 @@ function Base64Tool() {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-[#a0a0a0]">
-            Output {mode === 'encode' ? '(Base64)' : '(Text)'}
-          </span>
-          <TextArea
-            value={output}
-            readOnly
-            placeholder="Result will appear here..."
-            mono
-          />
+        <div className="flex flex-col gap-2 min-h-0">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[#a0a0a0]">
+              Output {mode === 'encode' ? '(Base64)' : '(Text)'}
+            </span>
+            {output && (
+              <button
+                onClick={search.open}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-[#666666] hover:text-[#a0a0a0] hover:bg-[#1a1a1a] rounded transition-colors"
+                title="Find in output (Ctrl+F)"
+              >
+                <Search className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+          <div
+            ref={search.scrollContainerRef}
+            className="flex-1 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] overflow-hidden flex flex-col min-h-0"
+          >
+            {search.isOpen && (
+              <div className="sticky top-0 z-10 flex justify-end p-2 bg-[#111111]/80 backdrop-blur-sm border-b border-[#2a2a2a]">
+                <SearchBar
+                  isOpen={search.isOpen}
+                  searchTerm={search.searchTerm}
+                  onSearchChange={search.setSearchTerm}
+                  currentMatch={search.currentIndex}
+                  totalMatches={search.totalMatches}
+                  onNext={search.goToNext}
+                  onPrev={search.goToPrev}
+                  onClose={search.close}
+                  caseSensitive={search.caseSensitive}
+                  onToggleCaseSensitive={search.toggleCaseSensitive}
+                />
+              </div>
+            )}
+            <div className="flex-1 overflow-auto px-3 py-3">
+              {output ? (
+                <pre className="font-mono text-sm leading-relaxed text-[#e0e0e0] whitespace-pre-wrap break-words m-0">
+                  {search.isOpen && search.searchTerm
+                    ? outputLines.map((line, idx) => (
+                        <span key={idx}>
+                          {renderHighlightedLine(line, idx)}
+                          {idx < outputLines.length - 1 ? '\n' : ''}
+                        </span>
+                      ))
+                    : output}
+                </pre>
+              ) : (
+                <span className="font-mono text-sm text-[#555555]">Result will appear here...</span>
+              )}
+            </div>
+          </div>
           {output && (
             <div className="text-xs text-[#555555]">
               {mode === 'encode'

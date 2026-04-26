@@ -248,7 +248,7 @@ function SqlFormatter() {
   ]
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-y-auto">
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -309,7 +309,7 @@ function SqlFormatter() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 min-h-0">
           <span className="text-sm font-medium text-[#a0a0a0]">Input SQL</span>
           <TextArea
             value={input}
@@ -319,7 +319,7 @@ function SqlFormatter() {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 min-h-0">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-[#a0a0a0]">Output</span>
             <div className="flex items-center gap-2">
@@ -386,43 +386,6 @@ function SqlFormatter() {
         </div>
       </div>
 
-      <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-4">
-        <h3 className="text-sm font-medium text-[#a0a0a0] mb-3">Quick Reference</h3>
-        <div className="grid grid-cols-4 gap-4 text-xs">
-          <div>
-            <div className="text-[#666666] mb-1">Query</div>
-            <div className="text-[#555555] space-y-1">
-              <div><code className="text-emerald-400/70">SELECT</code> columns</div>
-              <div><code className="text-emerald-400/70">FROM</code> table</div>
-              <div><code className="text-emerald-400/70">WHERE</code> condition</div>
-            </div>
-          </div>
-          <div>
-            <div className="text-[#666666] mb-1">Joins</div>
-            <div className="text-[#555555] space-y-1">
-              <div><code className="text-emerald-400/70">INNER JOIN</code></div>
-              <div><code className="text-emerald-400/70">LEFT JOIN</code></div>
-              <div><code className="text-emerald-400/70">RIGHT JOIN</code></div>
-            </div>
-          </div>
-          <div>
-            <div className="text-[#666666] mb-1">Aggregates</div>
-            <div className="text-[#555555] space-y-1">
-              <div><code className="text-emerald-400/70">COUNT()</code></div>
-              <div><code className="text-emerald-400/70">SUM()</code></div>
-              <div><code className="text-emerald-400/70">AVG()</code></div>
-            </div>
-          </div>
-          <div>
-            <div className="text-[#666666] mb-1">Modifiers</div>
-            <div className="text-[#555555] space-y-1">
-              <div><code className="text-emerald-400/70">ORDER BY</code></div>
-              <div><code className="text-emerald-400/70">GROUP BY</code></div>
-              <div><code className="text-emerald-400/70">LIMIT</code></div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -10,22 +10,21 @@ import {
   Regex,
   Clock,
   Timer,
-  FileText,
   Database,
   Palette,
   Link2,
   ChevronDown,
   ChevronRight,
-  Send,
   Dices,
   QrCode,
   Code,
   Pin,
   PinOff,
-  Globe,
   GripVertical,
   Columns,
   Maximize2,
+  HardDrive,
+  History,
 } from 'lucide-react'
 import { Page } from '../App'
 
@@ -48,7 +47,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { id: 'json', label: 'JSON Formatter', icon: Braces },
       { id: 'sql', label: 'SQL Formatter', icon: Database },
-      { id: 'markdown', label: 'Markdown Preview', icon: FileText },
       { id: 'html' as Page, label: 'HTML Viewer', icon: Code },
     ],
   },
@@ -66,7 +64,7 @@ export const navGroups: NavGroup[] = [
     id: 'generators',
     label: 'Generators',
     items: [
-      { id: 'uuid', label: 'UUID Generator', icon: Fingerprint },
+      { id: 'uuid', label: 'UUID', icon: Fingerprint },
       { id: 'fakedata', label: 'Fake Data', icon: Dices },
       { id: 'qrcode', label: 'QR Code', icon: QrCode },
     ],
@@ -77,7 +75,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { id: 'regex', label: 'Regex Tester', icon: Regex },
       { id: 'diff', label: 'Diff Checker', icon: GitCompare },
-      { id: 'api', label: 'API Tester', icon: Send },
     ],
   },
   {
@@ -87,6 +84,7 @@ export const navGroups: NavGroup[] = [
       { id: 'timestamp', label: 'Timestamp', icon: Clock },
       { id: 'color', label: 'Color Converter', icon: Palette },
       { id: 'cron', label: 'Cron Parser', icon: Timer },
+      { id: 'dataunit', label: 'Data Unit Converter', icon: HardDrive },
     ],
   },
 ]
@@ -109,20 +107,28 @@ interface DragState {
 interface SidebarProps {
   currentPage: Page
   onNavigate: (page: Page) => void
-  onToggleBrowser: () => void
   splitView: boolean
   onToggleSplitView: () => void
   onToggleFocusMode: () => void
+  recentPages: Page[]
+  startupMs: number | null
 }
 
-function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggleSplitView, onToggleFocusMode }: SidebarProps) {
+function Sidebar({ currentPage, onNavigate, splitView, onToggleSplitView, onToggleFocusMode, recentPages, startupMs }: SidebarProps) {
+  const [startupVisible, setStartupVisible] = useState(true)
+  useEffect(() => {
+    if (startupMs === null) return
+    const t = setTimeout(() => setStartupVisible(false), 10000)
+    return () => clearTimeout(t)
+  }, [startupMs])
+
   // --- Expanded groups state (persisted) ---
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('devkit-sidebar-groups')
       if (saved) return new Set(JSON.parse(saved))
     } catch { /* ignore */ }
-    return new Set(navGroups.map(g => g.id))
+    return new Set(['recent', ...navGroups.map(g => g.id)])
   })
 
   useEffect(() => {
@@ -285,11 +291,13 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
     item: NavItem,
     groupId: string,
     index: number,
+    noDrag = false,
   ) => {
     const { id, label, icon: Icon } = item
     const isActive = currentPage === id
     const isPinned = pinnedSet.has(id)
     const showInsertionBefore =
+      !noDrag &&
       dragState &&
       dragState.sourceGroup === groupId &&
       dragState.overGroup === groupId &&
@@ -302,11 +310,11 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
           <div className="h-0.5 bg-emerald-500 mx-3 rounded" />
         )}
         <button
-          draggable
-          onDragStart={(e) => handleDragStart(e, groupId, id)}
-          onDragOver={(e) => handleDragOver(e, groupId, index)}
-          onDrop={(e) => handleDrop(e, groupId, index)}
-          onDragEnd={handleDragEnd}
+          draggable={!noDrag}
+          onDragStart={noDrag ? undefined : (e) => handleDragStart(e, groupId, id)}
+          onDragOver={noDrag ? undefined : (e) => handleDragOver(e, groupId, index)}
+          onDrop={noDrag ? undefined : (e) => handleDrop(e, groupId, index)}
+          onDragEnd={noDrag ? undefined : handleDragEnd}
           onClick={() => onNavigate(id)}
           className={`group w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors text-sm ${
             isActive
@@ -314,7 +322,7 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
               : 'text-[#a0a0a0] hover:bg-[#1a1a1a] hover:text-white border-l-2 border-transparent'
           }`}
         >
-          <GripVertical className="w-3 h-3 opacity-0 group-hover:opacity-50 shrink-0 cursor-grab" />
+          {!noDrag && <GripVertical className="w-3 h-3 opacity-0 group-hover:opacity-50 shrink-0 cursor-grab" />}
           <Icon className="w-4 h-4 shrink-0" />
           <span className="font-medium flex-1 truncate">{label}</span>
           <button
@@ -344,9 +352,10 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
     options?: {
       icon?: React.ComponentType<{ className?: string }>
       collapsible?: boolean
+      noDrag?: boolean
     }
   ) => {
-    const { icon: GroupIcon, collapsible = true } = options || {}
+    const { icon: GroupIcon, collapsible = true, noDrag = false } = options || {}
     const isExpanded = expandedGroups.has(groupId)
     const hasActiveTool = items.some(item => item.id === currentPage)
 
@@ -379,10 +388,10 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
         >
           <div className="space-y-0.5 mt-0.5">
             {items.map((item, index) =>
-              renderNavItem(item, groupId, index)
+              renderNavItem(item, groupId, index, noDrag)
             )}
             {/* Show insertion indicator at end of list if dragging to last position */}
-            {dragState &&
+            {!noDrag && dragState &&
               dragState.sourceGroup === groupId &&
               dragState.overGroup === groupId &&
               dragState.overIndex === items.length && (
@@ -411,6 +420,18 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
 
       {/* Navigation */}
       <nav className="flex-1 p-2 overflow-y-auto">
+        {/* Recent group */}
+        {recentPages.length > 0 && (() => {
+          const recentItems: NavItem[] = recentPages
+            .map(id => toolLookup[id])
+            .filter(Boolean) as NavItem[]
+          return renderGroup('recent', 'Recent', recentItems, {
+            icon: History,
+            collapsible: true,
+            noDrag: true,
+          })
+        })()}
+
         {/* Pinned group at the top (only if there are pinned tools) */}
         {pinnedItems.length > 0 &&
           renderGroup('pinned', 'Pinned', pinnedItems, {
@@ -450,15 +471,6 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
           </button>
         </div>
 
-        {/* Browser button */}
-        <button
-          onClick={onToggleBrowser}
-          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-md text-xs text-[#a0a0a0] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <span>Browser</span>
-        </button>
-
         {/* Reset order */}
         <button
           onClick={resetOrder}
@@ -466,6 +478,16 @@ function Sidebar({ currentPage, onNavigate, onToggleBrowser, splitView, onToggle
         >
           Reset Order
         </button>
+
+        {/* Startup time */}
+        {startupMs !== null && (
+          <div
+            className="text-xs text-center transition-opacity duration-1000"
+            style={{ opacity: startupVisible ? 1 : 0 }}
+          >
+            <span className="text-emerald-500/70">⚡ Ready in {startupMs}ms</span>
+          </div>
+        )}
 
         {/* Hints */}
         <div className="text-xs text-[#666666] text-center space-y-1">

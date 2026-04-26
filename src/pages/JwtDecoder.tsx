@@ -49,11 +49,14 @@ function JwtDecoder() {
     }
   }, [input])
 
-  const isExpired = useMemo(() => {
+  const tokenStatus = useMemo((): 'valid' | 'expired' | 'not-yet-valid' | null => {
     if (!decoded?.payload) return null
+    const now = Date.now() / 1000
     const exp = decoded.payload.exp as number | undefined
-    if (!exp) return null
-    return Date.now() / 1000 > exp
+    const nbf = decoded.payload.nbf as number | undefined
+    if (nbf !== undefined && now < nbf) return 'not-yet-valid'
+    if (exp === undefined) return null
+    return now > exp ? 'expired' : 'valid'
   }, [decoded])
 
   const formatTimestamp = (timestamp: number): string => {
@@ -158,23 +161,28 @@ function JwtDecoder() {
             </div>
           )}
 
-          {decoded && isExpired !== null && (
+          {decoded && tokenStatus !== null && (
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                isExpired
-                  ? 'bg-red-500/10 border border-red-500/30'
-                  : 'bg-emerald-500/10 border border-emerald-500/30'
+                tokenStatus === 'valid'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30'
+                  : 'bg-red-500/10 border border-red-500/30'
               }`}
             >
-              {isExpired ? (
+              {tokenStatus === 'valid' ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-400 text-sm">Token is valid</span>
+                </>
+              ) : tokenStatus === 'not-yet-valid' ? (
                 <>
                   <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <span className="text-red-400 text-sm">Token has expired</span>
+                  <span className="text-red-400 text-sm">Token not yet valid (nbf in future)</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 text-sm">Token is not expired</span>
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <span className="text-red-400 text-sm">Token has expired</span>
                 </>
               )}
             </div>

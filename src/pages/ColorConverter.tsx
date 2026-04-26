@@ -162,16 +162,11 @@ function ColorConverter() {
     const triadic1 = (hsl.h + 120) % 360
     const triadic2 = (hsl.h + 240) % 360
 
+    const toHex = (h: number) => { const { r, g, b } = hslToRgb(h, hsl.s, hsl.l); return rgbToHex(r, g, b) }
     return {
-      complementary: rgbToHex(...Object.values(hslToRgb(complementary, hsl.s, hsl.l)) as [number, number, number]),
-      analogous: [
-        rgbToHex(...Object.values(hslToRgb(analogous1, hsl.s, hsl.l)) as [number, number, number]),
-        rgbToHex(...Object.values(hslToRgb(analogous2, hsl.s, hsl.l)) as [number, number, number]),
-      ],
-      triadic: [
-        rgbToHex(...Object.values(hslToRgb(triadic1, hsl.s, hsl.l)) as [number, number, number]),
-        rgbToHex(...Object.values(hslToRgb(triadic2, hsl.s, hsl.l)) as [number, number, number]),
-      ],
+      complementary: toHex(complementary),
+      analogous: [toHex(analogous1), toHex(analogous2)],
+      triadic: [toHex(triadic1), toHex(triadic2)],
     }
   }, [hsl])
 
@@ -395,7 +390,8 @@ function ColorConverter() {
             <span className="text-sm font-medium text-[#a0a0a0] mb-3 block">Shades</span>
             <div className="flex gap-1 h-12">
               {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((lightness) => {
-                const shadeColor = rgbToHex(...Object.values(hslToRgb(hsl.h, hsl.s, lightness)) as [number, number, number])
+                const { r, g, b } = hslToRgb(hsl.h, hsl.s, lightness)
+                const shadeColor = rgbToHex(r, g, b)
                 return (
                   <div
                     key={lightness}

@@ -16,11 +16,12 @@ interface LayoutProps {
   onSetActiveSplitPane: (pane: 'left' | 'right') => void
   splitRatio: number
   onSplitRatioChange: (ratio: number) => void
-  onToggleBrowser: () => void
   currentPageLabel: string
   rightPageLabel: string
   rightPanePage: Page
   onDropOnPane: (pane: 'left' | 'right', toolId: string) => void
+  recentPages: Page[]
+  startupMs: number | null
 }
 
 function Layout({
@@ -36,11 +37,12 @@ function Layout({
   onSetActiveSplitPane,
   splitRatio,
   onSplitRatioChange,
-  onToggleBrowser,
   currentPageLabel,
   rightPageLabel,
   rightPanePage,
   onDropOnPane,
+  recentPages,
+  startupMs,
 }: LayoutProps) {
   const [pillVisible, setPillVisible] = useState(false)
   const [dragOverPane, setDragOverPane] = useState<'left' | 'right' | null>(null)
@@ -114,10 +116,11 @@ function Layout({
         <Sidebar
           currentPage={currentPage}
           onNavigate={onNavigate}
-          onToggleBrowser={onToggleBrowser}
           splitView={splitView}
           onToggleSplitView={onToggleSplitView}
           onToggleFocusMode={onToggleFocusMode}
+          recentPages={recentPages}
+          startupMs={startupMs}
         />
       )}
 

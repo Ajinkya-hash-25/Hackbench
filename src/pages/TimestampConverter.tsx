@@ -151,10 +151,14 @@ function TimestampConverter() {
   }
 
   const handleDatePartsChange = () => {
+    const y = parseInt(year)
+    const mo = parseInt(month)
+    const d = parseInt(day)
+    if (isNaN(y) || isNaN(mo) || isNaN(d)) return
     const date = new Date(
-      parseInt(year) || 0,
-      (parseInt(month) || 1) - 1,
-      parseInt(day) || 1,
+      y,
+      mo - 1,
+      d,
       parseInt(hour) || 0,
       parseInt(minute) || 0,
       parseInt(second) || 0
@@ -196,8 +200,8 @@ function TimestampConverter() {
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
     const weeks = Math.floor(days / 7)
-    const months = Math.floor(days / 30)
-    const years = Math.floor(days / 365)
+    const months = Math.floor(days / 30.44)
+    const years = Math.floor(days / 365.25)
 
     let r = ''
     if (years > 0) r = `${years} year${years > 1 ? 's' : ''}`

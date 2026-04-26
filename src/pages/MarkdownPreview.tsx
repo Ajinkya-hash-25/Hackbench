@@ -282,19 +282,19 @@ Enjoy writing markdown!`)
   const lineCount = useMemo(() => input.split('\n').length, [input])
 
   return (
-    <div className="h-full flex flex-col gap-4 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-500/10 rounded-lg">
+    <div className="h-full flex flex-col gap-4 overflow-hidden">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-emerald-500/10 rounded-lg shrink-0">
             <FileText className="w-5 h-5 text-emerald-400" />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">Markdown Preview</h2>
-            <p className="text-xs text-[#666666]">Write and preview markdown in real-time</p>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-white truncate">Markdown Preview</h2>
+            <p className="text-xs text-[#666666] truncate">Write and preview markdown in real-time</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-[#555555]">{wordCount} words · {lineCount} lines</span>
           <div className="flex border border-[#2a2a2a] rounded-lg overflow-hidden ml-2">
             <button
@@ -331,9 +331,9 @@ Enjoy writing markdown!`)
         </div>
       </div>
 
-      <div className={`grid gap-4 flex-1 min-h-0 ${viewMode === 'split' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-4 flex-1 min-h-0 ${viewMode === 'split' ? 'grid-cols-[1fr_1fr]' : 'grid-cols-1'}`}>
         {viewMode === 'split' && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 min-h-0 min-w-0">
             <span className="text-sm font-medium text-[#a0a0a0]">Markdown</span>
             <TextArea
               value={input}
@@ -344,7 +344,7 @@ Enjoy writing markdown!`)
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 min-h-0 min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-[#a0a0a0]">Preview</span>
             <button

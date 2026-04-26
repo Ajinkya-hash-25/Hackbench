@@ -7,7 +7,7 @@ import { copyToClipboard } from '../utils/clipboard'
 interface Match {
   match: string
   index: number
-  groups: string[]
+  groups: string[]  // undefined groups from optional captures are filtered out
 }
 
 interface RegexFlags {
@@ -49,13 +49,20 @@ function RegexTester() {
 
       if (flags.global) {
         let match
+        let prevLastIndex = -1
         while ((match = regex.exec(testString)) !== null) {
+          // guard against infinite loop on zero-width matches
+          if (regex.lastIndex === prevLastIndex) {
+            regex.lastIndex++
+            continue
+          }
+          prevLastIndex = regex.lastIndex
           matches.push({
             match: match[0],
             index: match.index,
-            groups: match.slice(1)
+            groups: match.slice(1).filter((g): g is string => g !== undefined)
           })
-          if (match.index === regex.lastIndex) {
+          if (match[0].length === 0) {
             regex.lastIndex++
           }
         }
@@ -65,7 +72,7 @@ function RegexTester() {
           matches.push({
             match: match[0],
             index: match.index,
-            groups: match.slice(1)
+            groups: match.slice(1).filter((g): g is string => g !== undefined)
           })
         }
       }

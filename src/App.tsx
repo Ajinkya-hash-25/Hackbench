@@ -1,54 +1,49 @@
-import { useState, useCallback, useEffect, ComponentType } from 'react'
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, ComponentType } from 'react'
 import Layout from './components/Layout'
 import TabWrapper from './components/TabWrapper'
-import CommandPalette from './components/CommandPalette'
 import ClipboardMonitor from './components/ClipboardMonitor'
-import BrowserPanel from './components/BrowserPanel'
 import { navGroups } from './components/Sidebar'
-import DiffChecker from './pages/DiffChecker'
-import JsonFormatter from './pages/JsonFormatter'
-import Base64Tool from './pages/Base64Tool'
-import HashGenerator from './pages/HashGenerator'
-import UuidGenerator from './pages/UuidGenerator'
-import JwtDecoder from './pages/JwtDecoder'
-import RegexTester from './pages/RegexTester'
-import TimestampConverter from './pages/TimestampConverter'
-import CronParser from './pages/CronParser'
-import MarkdownPreview from './pages/MarkdownPreview'
-import SqlFormatter from './pages/SqlFormatter'
-import ColorConverter from './pages/ColorConverter'
-import UrlEncoder from './pages/UrlEncoder'
-import ApiTester from './pages/ApiTester'
-import DataGenerator from './pages/DataGenerator'
-import QrGenerator from './pages/QrGenerator'
-import HtmlViewer from './pages/HtmlViewer'
 
-export type Page = 'json' | 'diff' | 'base64' | 'url' | 'hash' | 'uuid' | 'jwt' | 'timestamp' | 'regex' | 'color' | 'cron' | 'markdown' | 'sql' | 'api' | 'fakedata' | 'qrcode' | 'html'
+const _appLoadTime = performance.now()
 
-const toolComponents: Record<Page, ComponentType> = {
-  json: JsonFormatter,
-  diff: DiffChecker,
-  base64: Base64Tool,
-  hash: HashGenerator,
-  uuid: UuidGenerator,
-  jwt: JwtDecoder,
-  regex: RegexTester,
-  timestamp: TimestampConverter,
-  cron: CronParser,
-  markdown: MarkdownPreview,
-  sql: SqlFormatter,
-  color: ColorConverter,
-  url: UrlEncoder,
-  api: ApiTester,
-  fakedata: DataGenerator,
-  qrcode: QrGenerator,
-  html: HtmlViewer,
+const CommandPalette = lazy(() => import('./components/CommandPalette'))
+
+const toolComponents: Record<string, ComponentType> = {
+  json:      lazy(() => import('./pages/JsonFormatter')),
+  diff:      lazy(() => import('./pages/DiffChecker')),
+  base64:    lazy(() => import('./pages/Base64Tool')),
+  hash:      lazy(() => import('./pages/HashGenerator')),
+  uuid:      lazy(() => import('./pages/UuidGenerator')),
+  jwt:       lazy(() => import('./pages/JwtDecoder')),
+  regex:     lazy(() => import('./pages/RegexTester')),
+  timestamp: lazy(() => import('./pages/TimestampConverter')),
+  cron:      lazy(() => import('./pages/CronParser')),
+  sql:       lazy(() => import('./pages/SqlFormatter')),
+  color:     lazy(() => import('./pages/ColorConverter')),
+  url:       lazy(() => import('./pages/UrlEncoder')),
+  fakedata:  lazy(() => import('./pages/DataGenerator')),
+  qrcode:    lazy(() => import('./pages/QrGenerator')),
+  html:      lazy(() => import('./pages/HtmlViewer')),
+  dataunit:  lazy(() => import('./pages/DataUnitConverter')),
 }
+
+export type Page = 'json' | 'diff' | 'base64' | 'url' | 'hash' | 'uuid' | 'jwt' | 'timestamp' | 'regex' | 'color' | 'cron' | 'sql' | 'fakedata' | 'qrcode' | 'html' | 'dataunit'
+
+const MAX_RECENT = 3
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('json')
   const [visitedPages, setVisitedPages] = useState<Set<Page>>(new Set(['json']))
+  const [recentPages, setRecentPages] = useState<Page[]>(() => {
+    try {
+      const saved = localStorage.getItem('hackbench-recent-pages')
+      if (saved) return JSON.parse(saved) as Page[]
+    } catch { /* ignore */ }
+    return []
+  })
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [startupMs, setStartupMs] = useState<number | null>(null)
+  const startupCaptured = useRef(false)
 
   // Focus mode
   const [focusMode, setFocusMode] = useState(() => {
@@ -63,13 +58,22 @@ function App() {
     return parseInt(localStorage.getItem('hackbench-split-ratio') || '50')
   })
 
-  // Browser panel
-  const [browserOpen, setBrowserOpen] = useState(false)
+  // Capture startup time once on first render
+  useEffect(() => {
+    if (startupCaptured.current) return
+    startupCaptured.current = true
+    setStartupMs(Math.round(performance.now() - _appLoadTime))
+  }, [])
 
   // Persist focus mode
   useEffect(() => {
     localStorage.setItem('hackbench-focus-mode', String(focusMode))
   }, [focusMode])
+
+  // Persist recent pages
+  useEffect(() => {
+    localStorage.setItem('hackbench-recent-pages', JSON.stringify(recentPages))
+  }, [recentPages])
 
   // Persist split ratio
   useEffect(() => {
@@ -83,6 +87,11 @@ function App() {
       next.add(page)
       return next
     })
+    // Track recent (most recent first, deduplicated, max 5)
+    setRecentPages(prev => {
+      const filtered = prev.filter(p => p !== page)
+      return [page, ...filtered].slice(0, MAX_RECENT)
+    })
     // In split view, navigate the active pane
     if (splitView && activeSplitPane === 'right') {
       setRightPanePage(page)
@@ -93,10 +102,6 @@ function App() {
 
   const toggleFocusMode = useCallback(() => {
     setFocusMode(prev => !prev)
-  }, [])
-
-  const toggleBrowser = useCallback(() => {
-    setBrowserOpen(prev => !prev)
   }, [])
 
   // Keyboard shortcuts
@@ -156,35 +161,43 @@ function App() {
         onSetActiveSplitPane={setActiveSplitPane}
         splitRatio={splitRatio}
         onSplitRatioChange={setSplitRatio}
-        onToggleBrowser={toggleBrowser}
         currentPageLabel={currentPageLabel}
         rightPageLabel={rightPageLabel}
         rightPanePage={rightPanePage}
         onDropOnPane={handleDropOnPane}
+        recentPages={recentPages}
+        startupMs={startupMs}
         rightPane={splitView ? (
           Array.from(visitedPages).map(page => (
             <div key={`right-${page}`} className={page === rightPanePage ? 'h-full' : 'hidden'}>
-              <TabWrapper component={toolComponents[page]} />
+              <Suspense fallback={<div className="h-full" />}>
+                <TabWrapper component={toolComponents[page]} />
+              </Suspense>
             </div>
           ))
         ) : undefined}
       >
         {Array.from(visitedPages).map(page => (
           <div key={page} className={page === currentPage ? 'h-full' : 'hidden'}>
-            <TabWrapper component={toolComponents[page]} />
+            <Suspense fallback={<div className="h-full" />}>
+              <TabWrapper component={toolComponents[page]} />
+            </Suspense>
           </div>
         ))}
       </Layout>
-      <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-        onNavigate={(page: Page) => {
-          handleNavigate(page)
-          setCommandPaletteOpen(false)
-        }}
-      />
+      {commandPaletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            isOpen={commandPaletteOpen}
+            onClose={() => setCommandPaletteOpen(false)}
+            onNavigate={(page: Page) => {
+              handleNavigate(page)
+              setCommandPaletteOpen(false)
+            }}
+          />
+        </Suspense>
+      )}
       <ClipboardMonitor onNavigate={handleNavigate} />
-      <BrowserPanel isOpen={browserOpen} onClose={() => setBrowserOpen(false)} />
     </>
   )
 }

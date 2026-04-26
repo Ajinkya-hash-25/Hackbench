@@ -161,7 +161,7 @@ export default function HtmlViewer() {
 
         <div className="flex items-center gap-1">
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleRefresh}
             title="Refresh preview"
@@ -169,7 +169,7 @@ export default function HtmlViewer() {
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleCopy}
             title="Copy HTML"
@@ -181,7 +181,7 @@ export default function HtmlViewer() {
             )}
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleDownload}
             title="Download as .html"
@@ -189,7 +189,7 @@ export default function HtmlViewer() {
             <Download className="w-4 h-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={() => setIsFullPreview((prev) => !prev)}
             title={isFullPreview ? 'Show editor' : 'Full preview'}

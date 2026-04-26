@@ -27,13 +27,14 @@ function CronParser() {
     }
 
     if (value.includes('/')) {
-      const [, step] = value.split('/')
+      const [base, step] = value.split('/')
+      const suffix = base !== '*' ? ` starting at ${type === 'hour' ? `hour ${base}` : type === 'minute' ? `minute ${base}` : base}` : ''
       switch (type) {
-        case 'minute': return `every ${step} minutes`
-        case 'hour': return `every ${step} hours`
-        case 'dayOfMonth': return `every ${step} days`
-        case 'month': return `every ${step} months`
-        case 'dayOfWeek': return `every ${step} days of week`
+        case 'minute': return `every ${step} minutes${suffix}`
+        case 'hour': return `every ${step} hours${suffix}`
+        case 'dayOfMonth': return `every ${step} days${suffix}`
+        case 'month': return `every ${step} months${suffix}`
+        case 'dayOfWeek': return `every ${step} days of week${suffix}`
       }
     }
 
@@ -99,19 +100,30 @@ function CronParser() {
     const validatePart = (value: string, min: number, max: number): boolean => {
       if (value === '*') return true
       if (value.includes('/')) {
-        const [base, step] = value.split('/')
-        if (base !== '*' && (isNaN(parseInt(base)) || parseInt(base) < min || parseInt(base) > max)) return false
-        return !isNaN(parseInt(step)) && parseInt(step) > 0
+        const [base, stepStr] = value.split('/')
+        const step = parseInt(stepStr)
+        if (isNaN(step) || step <= 0) return false
+        if (base === '*') return true
+        // base can be a range like 1-5 or a single number
+        if (base.includes('-')) {
+          const [s, e] = base.split('-').map(Number)
+          return !isNaN(s) && !isNaN(e) && s >= min && e <= max && s <= e
+        }
+        const b = parseInt(base)
+        return !isNaN(b) && b >= min && b <= max
       }
       if (value.includes('-')) {
-        const [start, end] = value.split('-')
-        return !isNaN(parseInt(start)) && !isNaN(parseInt(end)) &&
-               parseInt(start) >= min && parseInt(end) <= max
+        const [start, end] = value.split('-').map(Number)
+        return !isNaN(start) && !isNaN(end) && start >= min && end <= max && start <= end
       }
       if (value.includes(',')) {
-        return value.split(',').every(v => !isNaN(parseInt(v)) && parseInt(v) >= min && parseInt(v) <= max)
+        return value.split(',').every(v => {
+          const n = parseInt(v)
+          return !isNaN(n) && n >= min && n <= max
+        })
       }
-      return !isNaN(parseInt(value)) && parseInt(value) >= min && parseInt(value) <= max
+      const n = parseInt(value)
+      return !isNaN(n) && n >= min && n <= max
     }
 
     if (!validatePart(minute, 0, 59)) {
@@ -126,8 +138,8 @@ function CronParser() {
     if (!validatePart(month, 1, 12)) {
       return { valid: false, error: 'Invalid month field (1-12)', parts: cronParts, description: '' }
     }
-    if (!validatePart(dayOfWeek, 0, 6)) {
-      return { valid: false, error: 'Invalid day of week field (0-6)', parts: cronParts, description: '' }
+    if (!validatePart(dayOfWeek, 0, 7)) {
+      return { valid: false, error: 'Invalid day of week field (0-7, 0 and 7 = Sunday)', parts: cronParts, description: '' }
     }
 
     // Generate human-readable description
@@ -174,9 +186,11 @@ function CronParser() {
       const matchesPart = (value: string, dateValue: number): boolean => {
         if (value === '*') return true
         if (value.includes('/')) {
-          const [base, step] = value.split('/')
+          const [base, stepStr] = value.split('/')
+          const step = parseInt(stepStr)
           const start = base === '*' ? 0 : parseInt(base)
-          return (dateValue - start) % parseInt(step) === 0
+          if (dateValue < start) return false
+          return (dateValue - start) % step === 0
         }
         if (value.includes('-')) {
           const [start, end] = value.split('-')
@@ -188,11 +202,12 @@ function CronParser() {
         return parseInt(value) === dateValue
       }
 
+      const dow = date.getDay()
       return matchesPart(minute, date.getMinutes()) &&
              matchesPart(hour, date.getHours()) &&
              matchesPart(dayOfMonth, date.getDate()) &&
              matchesPart(month, date.getMonth() + 1) &&
-             matchesPart(dayOfWeek, date.getDay())
+             (matchesPart(dayOfWeek, dow) || (dow === 0 && matchesPart(dayOfWeek, 7)))
     }
 
     let iterations = 0
@@ -353,7 +368,7 @@ function CronParser() {
               <div className="pt-2 mt-2 border-t border-[#2a2a2a]">
                 <div className="text-[#666666] mb-1">Days of Week</div>
                 <p className="text-[#555555]">
-                  0 = Sunday, 1 = Monday, ..., 6 = Saturday
+                  0/7 = Sunday, 1 = Monday, ..., 6 = Saturday
                 </p>
               </div>
               <div className="pt-2 mt-2 border-t border-[#2a2a2a]">
